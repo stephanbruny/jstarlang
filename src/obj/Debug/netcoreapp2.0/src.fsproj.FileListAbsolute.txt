@@ -1,0 +1,7 @@
+D:\Code\JLang\src\bin\Debug\netcoreapp2.0\src.deps.json
+D:\Code\JLang\src\bin\Debug\netcoreapp2.0\src.runtimeconfig.json
+D:\Code\JLang\src\bin\Debug\netcoreapp2.0\src.runtimeconfig.dev.json
+D:\Code\JLang\src\bin\Debug\netcoreapp2.0\src.dll
+D:\Code\JLang\src\bin\Debug\netcoreapp2.0\src.pdb
+D:\Code\JLang\src\obj\Debug\netcoreapp2.0\src.dll
+D:\Code\JLang\src\obj\Debug\netcoreapp2.0\src.pdb

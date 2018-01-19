@@ -1,0 +1,12 @@
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\JStar.Test.deps.json
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\JStar.Test.runtimeconfig.json
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\JStar.Test.runtimeconfig.dev.json
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\JStar.Test.dll
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\JStar.Test.pdb
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\JStar.dll
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\JStar.pdb
+D:\Code\JLang\src\JStar.Test\obj\Debug\netcoreapp2.0\JStar.Test.dll
+D:\Code\JLang\src\JStar.Test\obj\Debug\netcoreapp2.0\JStar.Test.pdb
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\NUnit3.TestAdapter.dll
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\nunit.engine.netstandard.dll
+D:\Code\JLang\src\JStar.Test\bin\Debug\netcoreapp2.0\Mono.Cecil.dll

@@ -1,0 +1,7 @@
+D:\Code\JLang\src\JStar\bin\Debug\netcoreapp2.0\JStar.deps.json
+D:\Code\JLang\src\JStar\bin\Debug\netcoreapp2.0\JStar.runtimeconfig.json
+D:\Code\JLang\src\JStar\bin\Debug\netcoreapp2.0\JStar.runtimeconfig.dev.json
+D:\Code\JLang\src\JStar\bin\Debug\netcoreapp2.0\JStar.dll
+D:\Code\JLang\src\JStar\bin\Debug\netcoreapp2.0\JStar.pdb
+D:\Code\JLang\src\JStar\obj\Debug\netcoreapp2.0\JStar.dll
+D:\Code\JLang\src\JStar\obj\Debug\netcoreapp2.0\JStar.pdb

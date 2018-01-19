@@ -1,0 +1,439 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "JSSharp",
+	"patterns": [
+		{
+			"include": "#general"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.jss",
+					"match": "\\b(do|repeat|match|with|try|catch|as|throw|async|await|send|receive|let|break|extend|return|unit)\\b"
+				},
+				{
+					"name": "keyword.other.jss",
+					"match": "\\b(export|import)\\b"
+                },
+                {
+					"name": "variable.language.jss",
+					"match": "\\b(this|operator)\\b"
+                },
+                {
+					"name": "storage.type.jss",
+					"match": "\\b(var)\\b"
+                }
+			]
+        },
+        "linecomment": {
+            "patterns": [{
+                "name": "comment.line.double-dash.jss",
+                "match": "(\\/\\/).*$\n?",
+                "captures": {
+                    "1": {
+                        "name": "punctuation.definition.comment.jss"
+                    }
+                }
+            }]
+        },
+        "blockcomment": {
+            "patterns": [{
+                "name": "comment.block.jss",
+                "begin": "\\/\\*",
+                "beginCaptures": {
+                    "0": {
+                        "name": "punctuation.definition.comment.jss"
+                    }
+                },
+                "end": "\\*\\/",
+                "endCaptures": {
+                    "0": {
+                        "name": "punctuation.definition.comment.jss"
+                    }
+                }
+            }]
+        },
+		"constant": {
+			"patterns": [
+                {
+                    "name": "constant.language.jss",
+                    "match": "\\b(some|none|false|true)\\b"
+                }
+            ]
+		},
+		"number": {
+			"patterns": [{
+				"name": "constant.numeric.jss",
+				"match": "(?<![\\d.])\\s0x[a-fA-F\\d]+|\\b\\d+(\\.\\d+)?([eE]-?\\d+)?|\\.\\d+([eE]-?\\d+)?"
+			}]
+        },
+        "template-substitution-element": {
+			"name": "meta.template.expression.jss",
+			"begin": "\\$\\{",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.template-expression.begin.jss"
+				}
+			},
+			"end": "\\}",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.template-expression.end.jss"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#general"
+				}
+			],
+			"contentName": "meta.embedded.line.jss"
+        },
+        "templatestring": {
+            "name": "string.interpolated.jss",
+            "begin": "(`)",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.template.begin.jss"
+                }
+            },
+            "end": "`",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.template.end.jss"
+                }
+            },
+            "patterns": [
+                { "include": "#template-substitution-element" }
+            ]
+        },
+		"singlequotestring": {
+            "name": "string.quoted.single.jss",
+            "begin": "'",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.jss"
+                }
+            },
+            "end": "'",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.end.jss"
+                }
+            },
+            "patterns": [
+                {
+                    "match": "\\\\(\\d{1,3}|.)",
+                    "name": "constant.character.escape.jss"
+                }
+            ]
+        },
+        "doublequotestring": {
+            "name": "string.quoted.double.jss",
+            "begin": "\"",
+            "beginCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.begin.jss"
+                }
+            },
+            "end": "\"",
+            "endCaptures": {
+                "0": {
+                    "name": "punctuation.definition.string.end.jss"
+                }
+            },
+            "patterns": [
+                {
+                    "match": "\\\\(\\d{1,3}|.)",
+                    "name": "constant.character.escape.jss"
+                }
+            ]
+		},
+		"strings": {
+			"patterns": [
+				{ "include": "#doublequotestring" },
+                { "include": "#singlequotestring" },
+                { "include": "#templatestring" }
+			]
+		},
+		"arrayindex":{
+            "name": "meta.index.jss",
+            "begin": "\\[",
+            "end": "\\]",
+            "beginCaptures": {
+                "0": {
+                    "name": "markup.bold.jss"
+                }
+            },
+            "endCaptures": {
+                "0": {
+                    "name": "markup.bold.jss"
+                }
+            },
+            "patterns": [
+                {
+                    "include": "#general"
+                }
+            ]
+		},
+		"function": {
+            "name": "meta.function.jss",
+            "begin": "\\b(function)(\\s+(((\\w(\\w|\\d)*)(\\.|:))*(\\w(\\w|\\d)*)))?\\s*(\\()\\s*((\\.\\.\\.|\\w(\\w|\\d)*)(,\\s*(\\.\\.\\.|\\w(\\w|\\d)*))*)?\\s*(\\))\\s*\\{",
+            "beginCaptures": {
+                "1": {
+                    "name": "keyword.control.jss"
+                },
+                "3": {
+                    "name": "entity.name.function.jss"
+                },
+                "11": {
+                    "name": "variable.parameter.function.jss"
+                }
+            },
+            "end": "}",
+            "patterns": [
+                {
+                    "include": "#general"
+                }
+            ]
+        },
+        "function-declaration": {
+			"name": "meta.function.jss",
+			"begin": "(?<![_$[:alnum:]])(?:(?<=\\.\\.\\.)|(?<!\\.))(function\\b)(?:\\s*(\\*))?(?:(?:\\s+|(?<=\\*))([_$[:alpha:]][_$[:alnum:]]*))?\\s*",
+			"beginCaptures": {
+				"1": {
+					"name": "storage.type.function.jss"
+				},
+				"2": {
+					"name": "keyword.generator.asterisk.jss"
+				},
+				"3": {
+					"name": "meta.definition.function.jss entity.name.function.jss"
+				}
+			},
+			"end": "(?=$|^|;)|(?<=\\})",
+			"patterns": [
+				{
+					"include": "#general"
+				}
+			]
+        },
+		"lambda": {
+            "name": "meta.function.jss",
+            "begin": "\\b(fun|receive)(\\s+(((\\w(\\w|\\d)*)(\\.|:))*(\\w(\\w|\\d)*)))?\\s*(\\()\\s*((\\.\\.\\.|\\w(\\w|\\d)*)(,\\s*(\\.\\.\\.|\\w(\\w|\\d)*))*)?\\s*(\\))\\s*\\{",
+            "beginCaptures": {
+                "1": {
+                    "name": "keyword.control.jss"
+                },
+                "3": {
+                    "name": "entity.name.function.jss"
+                },
+                "11": {
+                    "name": "variable.parameter.function.jss"
+                }
+            },
+            "end": "}",
+            "patterns": [
+                {
+                    "include": "#general"
+                }
+            ]
+        },
+        "lambda-arrow": {
+            "patterns": [{
+                "match": "\\b(fun)(\\s+(((\\w(\\w|\\d)*)(\\.|:))*(\\w(\\w|\\d)*)))?\\s*(\\()\\s*((\\.\\.\\.|\\w(\\w|\\d)*)(,\\s*(\\.\\.\\.|\\w(\\w|\\d)*))*)?",
+                "captures": {
+                    "1": {
+                        "name": "keyword.control.jss"
+                    },
+                    "3": {
+                        "name": "entity.name.function.jss"
+                    },
+                    "11": {
+                        "name": "variable.parameter.function.jss"
+                    }
+                }
+            }]
+        },
+        "functioncall": {
+            "patterns": [{
+                "begin": "(\\w(\\w|\\d)*\\.)*?(\\w(\\w|\\d)*)\\(",
+                "end": "\\)",
+                "captures": {
+                    "1": {
+                        "name": "entity.name.type.jss"
+                    },
+                    "2": {
+                        "name": "entity.name.type.jss"
+                    },
+                    "3": {
+                         "name": "entity.name.function.jss"
+                    }
+                },
+                "patterns": [
+                    {
+                        "include": "#general"
+                    }
+                ]
+            }]
+        },
+        "unbox": {
+            "patterns": [{
+                "match": "\\b(as)\\s+(\\w(\\w|\\d)*)\\b",
+                "captures": {
+                    "1": { "name": "keyword.control.jss" },
+                    "2": { "name": "entity.name.type.jss" }
+                }
+            }]
+        },
+        "tablevalues": {
+            "patterns": [
+                { "include": "#number" },
+                { "include": "#strings" },
+                { "include": "#tabledecl" },
+                { "include": "#lambda" },
+                { "include": "#linecomment" },
+                { "include": "#blockcomment" },
+                { "include": "#constant" }
+            ]
+        },
+        "tableItem": {
+            "patterns": [
+                {
+                    "match": "([a-zA-Z0-9_-]+)\\s*?:",
+                    "name": "entity.other.attribute-name.jss"
+                },
+                {
+                    "match": "(\\@[a-zA-Z0-9_-]+)\\s*?:",
+                    "name": "support.constant.jss"
+                }
+            ]
+          },
+        "tabledecl":{
+            "name": "meta.tabledecl.jss",
+            "begin": "{",
+            "end": "}",
+            "patterns": [
+                { "include": "#tableItem" },
+                { "include": "#general" }
+            ]
+        },
+        "controlblock": {
+            "name": "meta.controlblock.jss",
+            "begin": "\\b(if|foreach|while)\\s*?\\(",
+            "end": "\\)",
+            "beginCaptures": {
+                "1": {
+                    "name": "keyword.control.jss"
+                }
+            },
+            "endCaptures": {
+				"0": {
+					"name": "meta.brace.round.jss"
+				}
+            },
+            "patterns": [
+                { "include": "#general" }
+            ]
+        },
+        "operator": {
+            "patterns": [
+                {
+                    "name": "keyword.operator.jss",
+                    "match": "(\\b(and|or|not)\\b)|([\\?|\\=|\\!|\\*|\\/|\\%|\\&|\\||\\+|\\-|\\~|\\<|\\>]+)"
+                }
+            ]
+        },
+        "enum": {
+            "patterns": [{
+                "match": "\\=\\s*\\|((\\s*\\w(\\w|\\d)*\\,?)+)\\s*\\|",
+                "captures": {
+                    "1": { "name": "storage.type.jss" }
+                }
+            }]
+        },
+        "variable-declare": {
+            "patterns": [
+                {
+                    "match": "(\\b(let)\\b)\\s*(\\w(\\w|\\d)*)",
+                    "captures": {
+                        "1": { "name": "storage.type.jss" },
+                        "2": { "name": "variable.other.jss" }
+                    }
+                },
+                {
+                    "match": "(\\b(var)\\b)\\s*(\\w(\\w|\\d)*)",
+                    "captures": {
+                        "1": { "name": "storage.type.jss" },
+                        "2": { "name": "entity.name.tag.jss" }
+                    }
+                }
+            ]
+        },
+        "variable-init": {
+            "patterns": [{
+                "match": "(variable-declare)\\s*\\=\\s*(general)\\s*;"
+            }]
+        },
+        "property": {
+            "patterns": [
+                {
+                    "match": "\\b(this)\\s*?\\.\\s*?(\\w(\\w|\\d)*)",
+                    "captures": {
+                        "1": { "name": "storage.type.jss" },
+                        "2": { "name": "entity.name.selector.jss" }
+                    }
+                },
+                {
+                    "match": "\\b(this)\\s*?\\.\\s*?(\\@\\w(\\w|\\d)*)",
+                    "captures": {
+                        "1": { "name": "storage.type.jss" },
+                        "2": { "name": "support.constant.jss" }
+                    }
+                }
+            ]
+        },
+        "runtime": {
+            "patterns": [
+                {
+                    "name": "support.function.jss",
+                    "match": "\\b(Exception|toString|Maybe|getType|extern)\\b"
+                },
+                {
+                    "name": "support.variable.jss",
+                    "match": "\\b\\@(value|name|length)\\b"
+                },
+                {
+                    "name": "support.type.jss",
+                    "match": "\\b(System|Types|Console|Array)\\b"
+                }
+            ]
+        },
+		"general": {
+			"patterns": [
+                { "include": "#linecomment" },
+                { "include": "#blockcomment" },
+				{ "include": "#constant" },
+				{ "include": "#strings" },
+				{ "include": "#number" },
+                { "include": "#function-declaration" },
+                { "include": "#lambda-arrow" },
+                { "include": "#lambda" },
+                { "include": "#tabledecl" },
+                { "include": "#controlblock" },
+                { "include": "#unbox" },
+                { "include": "#operator" },
+                { "include": "#enum" },
+                { "include": "#variable-init" },
+                { "include": "#variable-declare" },
+                { "include": "#property" },
+				{ "include": "#keywords" },
+                { "include": "#runtime" },
+                { "include": "#arrayindex" },
+                { "include": "#functioncall" }
+			]
+		}
+	},
+	"scopeName": "source.jss"
+}

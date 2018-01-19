@@ -1,0 +1,28 @@
+{
+    "fileTypes": [
+        "jss"
+    ],
+    "name": "JSSharp",
+    "patterns": [
+        {
+          "match": "\\b(if|foreach|while|repeat|match|with|try|catch|as)\\s+",
+          "name": "keyword.control.jss"
+        },
+        {
+          "match": "\\b(async|await|send|process|receive)\\s+",
+          "name": "keyword.other.jss"
+        },
+        {
+          "match": "\\b(some|none|)\\s+",
+          "name": "keyword.other.jss"
+        },
+        {
+          "match": "\\b(let|var|)\\s+",
+          "name": "keyword.other.jss"
+        },
+        {
+          "match": "\\b(function|fun|)\\s+",
+          "name": "keyword.other.jss"
+        }
+    ]
+}
