@@ -40,7 +40,6 @@ module ParserTest =
             result |> should equal expect
         )
 
-
     [<Test>] 
     let ``should fail invalid let-syntax`` () =
         let text = @"let foo != 'bar';"
@@ -67,5 +66,4 @@ module ParserTest =
         let blockSecond = Some(Parser.Block[ Some(Parser.Token(SymName("y"))); blockLast ]);
         let blockTop = Some(Parser.Block[ Some(Parser.Token(SymName("x"))); blockSecond; Some(Parser.Token(SymName("foo"))); ]);
 
-        result |> should equal blockTop    
-             
+        result |> should equal blockTop
