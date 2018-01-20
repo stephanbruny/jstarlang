@@ -41,6 +41,17 @@ module ParserTest =
         )
 
     [<Test>] 
+    let ``should parse a table`` () =
+        let text = "let foo = { x: 3 bar: { y: 'inner', z: 4.2 } }"
+        let scan = lexAndScan text
+        let barTable = ("bar", VTable [ ("y", VString("inner")); ("z", VDouble(4.2)) ])
+        let fooTable = VTable [ ("x", VInteger(3)); barTable ]
+        let expect = Some(Parser.LetBinding("foo", fooTable))
+
+        let (result, _) = Parser.execute [] scan
+        result |> should equal expect
+
+    [<Test>] 
     let ``should fail invalid let-syntax`` () =
         let text = @"let foo != 'bar';"
         let scan = lexAndScan text
@@ -79,7 +90,7 @@ module ParserTest =
             }
             """
 
-        let ifCond = [ Some(Parser.Reference("n")); Some(Parser.Token(SymOp(OCustom("<=")))); Some(Parser.Token(SymVal(VInteger(1)))) ]
+        let ifCond = [ Some(Parser.Reference("n")); Some(Parser.Token(SymOp(OCustom("<=")))); Some(Parser.ValueToken(VInteger(1))) ]
         let ifBlock = [ Some(Parser.Token(SymKey(KReturn))); Some(Parser.Reference("n")); Some(Parser.Token(SymPunct(PSemicolon))) ]
         let fnRest = [
             Some(Parser.Token(SymKey(KReturn)));
@@ -87,14 +98,14 @@ module ParserTest =
             Some(Parser.Token(SymBrace(BBraceOpen)));
             Some(Parser.Reference("n"));
             Some(Parser.Token(SymOp(OCustom("-"))));
-            Some(Parser.Token(SymVal(VInteger(1))));
+            Some(Parser.ValueToken(VInteger(1)));
             Some(Parser.Token(SymBrace(BBraceClose)));
             Some(Parser.Token(SymOp(OCustom("+"))));
             Some(Parser.Reference("fib"));
             Some(Parser.Token(SymBrace(BBraceOpen)));
             Some(Parser.Reference("n"));
             Some(Parser.Token(SymOp(OCustom("-"))));
-            Some(Parser.Token(SymVal(VInteger(2))));
+            Some(Parser.ValueToken(VInteger(2)));
             Some(Parser.Token(SymBrace(BBraceClose)));
             Some(Parser.Token(SymPunct(PSemicolon)));
         ]
