@@ -123,4 +123,48 @@ module ParserTest =
 
         let scan = lexAndScan text
         let (result, _) = Parser.execute [] scan
-        result |> should equal expect        
+        result |> should equal expect
+
+    [<Test>]
+    let ``should parse a more complex example`` () =
+        let text = 
+            """
+            let a = 1;
+            let b = "b";
+            function foo(x) { return x + a }
+            let table = { foo: b }
+            """
+        let scan = lexAndScan text
+        let rec exec result scope tokens =
+            let (part, rest) = Parser.execute scope tokens
+            let localScope =
+                match part with
+                | Some(Parser.FunctionDef(name, _ , _))
+                | Some(Parser.LetBinding(name, _)) -> name::scope
+                | _ -> scope
+            let partialResult = part::result
+            if rest.IsEmpty then
+                partialResult |> List.rev
+            else
+                exec partialResult localScope rest
+        let result = exec [] [] scan
+
+        printfn ("Result: %A") result
+
+        let expectFn = [
+            Some(Parser.Token(SymKey KReturn));
+            Some(Parser.Reference("x"));
+            Some(Parser.Token(SymOp(OCustom ("+"))));
+            Some(Parser.Reference("a"))
+        ]
+
+        let expect = [
+            Some (Parser.LetBinding("a", VInteger(1)));
+            Some (Parser.Token(SymPunct(PSemicolon)));
+            Some (Parser.LetBinding("b", VString("b")));
+            Some (Parser.Token(SymPunct(PSemicolon)));
+            Some (Parser.FunctionDef("foo", ["x"], expectFn)); // TODO
+            Some (Parser.LetBinding("table", VTable([ ("foo", VReference("b")) ])));
+        ]
+
+        result |> List.iteri(fun i res -> res |> should equal expect.[i])
