@@ -51,6 +51,14 @@ module ParserTest =
         let (result, _) = Parser.execute [] scan
         result |> should equal expect
 
+    [<Test>]
+    let ``should parse table with string and integer keys`` () =
+        let text = "let table = { 'foo': 'bar', 'bar': 12.34, 3: unit }" 
+        let expect = Parser.LetBinding("table", VTable[ ("foo", VString "bar"); ("bar", VDouble 12.34); ("3", VUnit) ]) |> Some
+        let scan = lexAndScan text
+        let (result, _) = Parser.execute [] scan
+        result |> should equal expect
+
     [<Test>] 
     let ``should fail invalid let-syntax`` () =
         let text = @"let foo != 'bar';"
