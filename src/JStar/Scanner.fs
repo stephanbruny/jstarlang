@@ -53,9 +53,11 @@ module Scanner =
     | VDouble of double
     | VString of string
     | VTemplateString of string
+    | VReference of string
     | VBool of bool
     | VUnit
     | VNone
+    | VTable of (string * Value) list
 
     type Symbols =
     | SymKey of Keywords

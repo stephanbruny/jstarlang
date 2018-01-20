@@ -30,10 +30,10 @@ TODOS
 
 Parser
 ------
-- Lexial Analysis (done)
-- Symbolic Analysis
-- Grammar
-- AST
+[x] Lexial Analysis
+[x] Symbolic Analysis
+[ ] Grammar
+[ ] AST
 
 Module System
 -------------
