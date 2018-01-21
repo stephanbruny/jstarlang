@@ -39,6 +39,24 @@ module LexerTest =
         testLexerResult expect result
 
     [<Test>]
+    let ``should process line comment`` () =
+        let text = "// comment"
+        let result = JStar.Lexer.execute [] text
+        result |> should equal [TComment]
+
+    [<Test>]
+    let ``should process block comment`` () =
+        let text = 
+            """/* 
+                comment
+                more comment
+            */"""
+        
+        let result = JStar.Lexer.execute [] text
+        printfn "Result: %A" result
+        result |> should equal [TComment]
+
+    [<Test>]
     let ``should process empty string`` () =
         let result = JStar.Lexer.execute [] ""
         result |> should equal []

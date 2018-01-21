@@ -17,8 +17,7 @@ module ParserTest =
             | _ -> true
         )
         |> List.map JStar.Scanner.transformToken
-        |> List.choose Some
-        |> List.map Option.get
+        |> List.choose id
 
     [<Test>] 
     let ``should parse a let-binding`` () =
@@ -129,12 +128,17 @@ module ParserTest =
     let ``should parse a more complex example`` () =
         let text = 
             """
+            // Line Comment
             let a = 1;
             let b = "b";
+            /**
+                foo function
+            **/
             function foo(x) { return x + a }
             let table = { foo: b }
             """
         let scan = lexAndScan text
+
         let rec exec result scope tokens =
             let (part, rest) = Parser.execute scope tokens
             let localScope =
@@ -148,8 +152,6 @@ module ParserTest =
             else
                 exec partialResult localScope rest
         let result = exec [] [] scan
-
-        printfn ("Result: %A") result
 
         let expectFn = [
             Some(Parser.Token(SymKey KReturn));
