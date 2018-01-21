@@ -76,6 +76,15 @@ module ParserTest =
         result |> should equal expect
 
     [<Test>]
+    let ``should parse function without parameters`` () =
+        let text = "function myFunction() { 'funky' }"
+        let scan = lexAndScan text
+        let (result, _) = Parser.execute [] scan
+        let expect = Parser.FunctionDef( "myFunction", [], [ Some(Parser.ValueToken(VString("funky"))) ] ) |> Some
+        printfn "Result: %A" result
+        result |> should equal expect
+
+    [<Test>]
     let ``should parse nested blocks`` () =
         let text = "{ x { y {} } foo }"
         let scan = lexAndScan text
@@ -101,19 +110,9 @@ module ParserTest =
         let ifBlock = [ Some(Parser.Token(SymKey(KReturn))); Some(Parser.Reference("n")); Some(Parser.Token(SymPunct(PSemicolon))) ]
         let fnRest = [
             Some(Parser.Token(SymKey(KReturn)));
-            Some(Parser.Reference("fib"));
-            Some(Parser.Token(SymBrace(BBraceOpen)));
-            Some(Parser.Reference("n"));
-            Some(Parser.Token(SymOp(OCustom("-"))));
-            Some(Parser.ValueToken(VInteger(1)));
-            Some(Parser.Token(SymBrace(BBraceClose)));
+            Some (Parser.FunctionCall ("fib",[VReference "n"; VOp (OCustom "-"); VInteger 1]));
             Some(Parser.Token(SymOp(OCustom("+"))));
-            Some(Parser.Reference("fib"));
-            Some(Parser.Token(SymBrace(BBraceOpen)));
-            Some(Parser.Reference("n"));
-            Some(Parser.Token(SymOp(OCustom("-"))));
-            Some(Parser.ValueToken(VInteger(2)));
-            Some(Parser.Token(SymBrace(BBraceClose)));
+            Some (Parser.FunctionCall ("fib",[VReference "n"; VOp (OCustom "-"); VInteger 2]));
             Some(Parser.Token(SymPunct(PSemicolon)));
         ]
         let ifPart = Some(Parser.If(ifCond, ifBlock))
@@ -129,8 +128,8 @@ module ParserTest =
         let text = 
             """
             // Line Comment
-            let a = 1;
-            let b = "b";
+            let a = 1; // A
+            let b = "b"; // B
             /**
                 foo function
             **/
