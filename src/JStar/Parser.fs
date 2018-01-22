@@ -1,8 +1,8 @@
 namespace JStar
 
-open JStar.Lexer
+open JStar
 open JStar.Scanner
-open System.Reflection.Emit
+open Lexer
 
 module Parser =
 
@@ -11,31 +11,38 @@ module Parser =
     | RefMutable of string
     | RefFunction of string
 
-    type ExpressionValue = 
+    type TableValue = 
     | ValReference of string
     | ValStatic of Scanner.Value
-    | ValSubtable of ExpressionValue list
+    | ValSubtable of TableValue list
 
     type TableKey =
     | TKNumeric of int
     | TKName of string
 
-    type TableProperty = TableProperty of TableKey * ExpressionValue
+    type TableProperty = TableProperty of TableKey * TableValue
 
     type TableDefinition = 
     | TableProp of TableProperty
     | SubTable of TableDefinition
 
+    /// Abstract Parser Tree
     type Parselet = 
-    | LetBinding of string * Scanner.Value
-    | FunctionDef of string * (string list) * (Parselet option list) // function of name * parameters * body
-    | If of (Parselet option list) * (Parselet option list)
+    | LetBinding of string * Parselet
+    | FunctionDef of string * Parselet * Parselet // function of name * parameters * body
+    | FunctionCall of string * Parselet
+    | OpUnary of Operators * Parselet
+    | OpBinary of Operators * Parselet * Parselet
+    | OpTernary of Parselet * Parselet * Parselet
+    | If of Parselet * Parselet * Parselet option
     | Block of Parselet option list
     | BlockStop
-    | Reference of string
-    | TableDef of TableDefinition list
+    | Identifier of string
+    | TableDef of Parselet
     | ValueToken of Scanner.Value
-    | KeyValue of TableKey * Scanner.Value
+    | KeyValue of TableKey * Parselet
+    | Group of Parselet list
+    | Return of Parselet option
     | Token of Scanner.Symbols
 
     let checkExpect expect token =
@@ -56,31 +63,11 @@ module Parser =
     let getNameValue nameToken =
         let errorMessage = sprintf "Unexpected token %A" nameToken
         match nameToken with
-        | Token scan -> 
-            match scan with
-            | SymName value -> value
-            | _ -> failwith errorMessage
-        | _ -> failwith errorMessage 
-
-
-    let rec getStaticValue valueToken =
-        let errorMessage = sprintf "Unexpected token in assignment: %A" valueToken
-        match valueToken with
-        | Block content ->
-            let tableData = 
-                content 
-                |> List.filter(fun p -> (p <> Some(Token(SymPunct(PComma)))))
-                |> List.map(fun parselet ->
-                    match parselet with
-                    | Some (KeyValue ( TKName(n), v)) -> (n, v)
-                    | _ -> failwith (sprintf "Unexpected token in table: %A" parselet)
-                )
-            VTable(tableData)
-        | ValueToken value -> value
-        | _ -> failwith errorMessage           
+        | Identifier value -> value
+        | _ -> failwith errorMessage         
 
     let getOperator opToken =
-        let errorMessage = sprintf "Expected opertor token, but got %A" opToken
+        let errorMessage = sprintf "Expected operator token, but got %A" opToken
         match opToken with
         | Token scan -> 
             match scan with
@@ -94,9 +81,7 @@ module Parser =
         | Token tok -> tok
         | _ -> failwith errorMessage
 
-    let isSym sym token =        
-        let tok = expectToken token
-        tok = sym
+    let isSym sym token = token = sym
 
     let expectSym sym token =
         let errorMessage = sprintf "Expected symbol %A, but got %A" sym token
@@ -121,86 +106,148 @@ module Parser =
         |> List.map getNameValue
 
     let filterCommas (tokens : Parselet list) = 
-        tokens |> List.filter( fun tk -> not (isSym (SymPunct(PComma)) tk) )
+        tokens |> List.filter( fun tk -> match tk with | Token(SymPunct(PComma)) -> false | _ -> true )
 
-    let rec parse isDefinition scope (tokens : Scanner.Symbols list) =
+    let takeA (a, _) = a
+
+    let infixOp op left right = OpBinary(op, left, right)
+    let prefixOp op token = OpUnary(op, token)
+    let ternaryOp op tokenA tokenB = OpTernary(op, tokenA, tokenB)
+    let getParserOperation op token =
+        match op with
+        | OAssign -> (infixOp op token, 80)
+        | OCustom("*") -> (infixOp op token, 60)
+        | OCustom("/") -> (infixOp op token, 60)
+        | OCompareEqual -> (infixOp op token, 50)
+        | OCompareUnequal -> (infixOp op token, 50)
+        | OCustom("-") -> (infixOp op token, 50)
+        | OCustom("+") -> (infixOp op token, 50)
+        | OCustom(_) -> (infixOp op token, 40)
+        | _ -> failwith "Broken Op"
+
+    let rec parse isDefinition isTable scope (tokens : Scanner.Symbols list) =
         let mutable localScope = scope
-        let rec parseUntil isDef stop results restTail =
-            let (res, rest) = parse isDef localScope restTail
-            if (res <> Some(stop) || restTail.IsEmpty) then 
-                parseUntil isDef stop (res::results) rest
-            else
-                (results |> List.rev, rest)
-        let getNext isDef tokenList =
-            let (result, rest) = parse isDef localScope tokenList
+        let getNext isDef isTab tokenList =
+            let (result, rest) = parse isDef isTab localScope tokenList
             (result |> someOrError "Expected name", rest)
-        let expectBlockContent tokenList = 
-            let (block, next) = getNext false tokenList
-            let blockContent = match block with | Block content -> content | _ -> failwith "Expected block"        
+        let getNextSym (tail: Scanner.Symbols list) = (tail.Head, tail.Tail)
+        let getNextn (tail: Scanner.Symbols list) n =
+            let (result, _) = tail |> List.take n |> parse isDefinition isTable localScope
+            (result, tail |> List.skip n)
+        let expectBlock tokenList = 
+            let (block, next) = getNext false isTable tokenList
+            let blockContent = match block with | Block _ -> block | _ -> failwith "Expected block"        
             (blockContent, next)
-        let defineTable nameSymbol tail orElse = 
-            let (lookAhead, n) = getNext false tail
-            let doub = SymPunct(PDouble)
-            if (isSym doub lookAhead) then
-                let isDef = n.Head = SymBrace(BBlockOpen) 
-                let (value, next) = getNext isDef n
-                match value with
-                | ValueToken v -> ( Some( KeyValue( TKName(nameSymbol), v ) ), next )
-                | Reference ref -> ( Some( KeyValue( TKName(nameSymbol), VReference(ref) ) ), next )
-                | Block _ -> 
-                    let pairValue = getStaticValue value
-                    ( Some(KeyValue(TKName(nameSymbol), pairValue)), next )
-                | _ -> failwith (sprintf "Unexpected table definition %A (in table %s)" value nameSymbol)    
+        let expectNextSym sym (tail: Scanner.Symbols list) =
+            let current = tail.Head
+            if (current = sym) then
+                (sym, tail.Tail)
             else
-                orElse        
+                failwith (sprintf "Expected symbol %A, but got %A" sym current)
+        let rec expression isDef isTab token (tail: Scanner.Symbols list) orElse =
+            let (next, n) = getNextSym tail
+            match next with
+            | SymBrace(BBraceOpen) -> 
+                let (result, rest) = getNext isDef isTab n
+                (result |> Some, rest)
+            | SymOp(op) -> 
+                let (right, n2) = getNext isDef isTab n
+                let (result, prec) = getParserOperation op token
+                (right |> result |> Some, n2)
+            | SymPunct(PDouble) when isTable ->
+                let key = token |> getNameValue
+                let (tableVal, rest) = getNext true true n
+                ( KeyValue(TKName(key), tableVal) |> Some,  rest)
+            | SymPunct(PComma) ->
+                let (nextItem, rest) = getNext isDef isTable n
+                let groupToken =
+                    match token with
+                    | Group(group) -> Group(List.append group [nextItem])
+                    | _ -> Group([token; nextItem])
+                expression isDef isTable groupToken rest (Some groupToken, rest)
+            | SymBrace(BBraceClose) -> (Some token, n)
+            | _ -> 
+                orElse
+        let functionCall name (tail: Scanner.Symbols list) orElse =
+            let (lookAhead, n) = getNextSym tail
+            if SymBrace(BBraceOpen) = lookAhead then
+                let (value, rest) = getNext false false n
+                let call = FunctionCall (name, value)
+                let defaultResult = (Some(FunctionCall((name, value))), rest)
+                expression isDefinition isTable call rest defaultResult
+            else
+                orElse            
+        let rec parseUntil isDef isTab stop results (restTail: Scanner.Symbols list) =
+            let (nextSym, fin) = getNextSym restTail
+            if (restTail.Head = stop || nextSym = stop || restTail.IsEmpty) then 
+                (results |> List.rev, fin)
+            else
+                let (next, n) = getNext isDef isTab restTail
+                let (currentResult, rest) = expression isDef isTab next n (next |> Some, n)
+                parseUntil isDef isTab stop (currentResult::results) rest
         match tokens with
         | [] -> ( Some (Token (SymVal(VUnit))), [] )
         | token::tail ->
             match token with
             | SymKey(KLet) ->
-                let (name, n1) = getNext true tail
-                let (op, n2) = getNext false n1
-                expectAssign op |> ignore
-                let (value, n3) = getNext true n2
-                let result = LetBinding ( (name |> getNameValue ), (value |> getStaticValue) ) |> Some
-                ( result, n3 )
+                let (assign, n1) = getNext true true tail
+                match assign with
+                | OpBinary(OAssign, Identifier(name), value) -> (LetBinding( name, value ) |> Some, n1)
+                | _ -> failwith (sprintf "Invalid assignment: %A" assign)
+            | SymKey(KFun)
             | SymKey(KFunction) ->
-                let (name, n1) = getNext true tail
-                let (openBrace, n2) = getNext false n1
-                do expectSym (SymBrace(BBraceOpen)) openBrace |> ignore
-                let stop = SymBrace(BBraceClose)
-                let (paramTokens, n3) = parseUntil true (Token stop) [] n2
-                let fnParams = 
-                    paramTokens
-                    |> List.choose id
-                    |> filterCommas
-                    |> extractParamNames
-                let functionName = name |> getNameValue                
-                localScope <- ((functionName::localScope) |> List.append fnParams)
-                let (blockContent, rest) = expectBlockContent n3
-                let result = FunctionDef ( ( functionName ), fnParams, blockContent) |> Some
-                (result, rest)
+                let (name, n1) = 
+                    if token = SymKey(KFun) then
+                        ( (Token(SymName(System.Guid.NewGuid().ToString()))), tail)
+                    else
+                        getNext true false tail
+
+                let (argsGroup, n2) = getNext true false n1
+                match argsGroup with
+                | Group group ->
+                    let functionName = name |> getNameValue
+                    let argNames = group |> List.map getNameValue       
+                    localScope <- ((functionName::localScope) |> (argNames |> List.append) )
+                    let (block, rest) = getNext false false n2
+                    let result = FunctionDef ( ( functionName ), argsGroup, block) |> Some
+                    (result, rest)
+                | _ -> failwith (sprintf "Expected arguments, but got %A (%A)" argsGroup n2) 
+            | SymKey(KReturn) ->
+                let (assign, n1) = getNext true true tail
+                let (result, rest) = expression false false assign n1 (Some (Return (Some assign) ), n1)
+                ( result, rest )
             | SymBrace(BBlockOpen) ->
-                let (block, rest) = parseUntil isDefinition BlockStop [] tail
-                ( Some(Block(block)), rest )
-            | SymBrace(BBlockClose) -> ( Some(BlockStop), tail )
+                if (isDefinition && isTable) then
+                    let (next, n) = (getNext true isTable tail)
+                    expression true true next n (Token(SymBrace BBlockOpen) |> Some, tail)
+                else
+                    let (block, rest) = parseUntil isDefinition isTable (SymBrace(BBlockClose)) [] tail
+                    ( Some(Block(block)), rest )
+            | SymBrace(BBraceOpen) ->
+                let (next, n) = getNext isDefinition isTable tail
+                match next with
+                | Token(SymBrace BBraceClose) -> (Group([]) |> Some, n)
+                | _ -> expression isDefinition isTable (Group[next]) n ((Token token) |> Some, n)
+            // | SymBrace(BBlockClose) -> ( Some(BlockStop), tail )
             | SymKey(KIf) ->
-                let (openBrace, n1) = getNext false tail
-                do expectSym (SymBrace(BBraceOpen)) openBrace |> ignore
-                let (cond, n2) = parseUntil false (Token (SymBrace(BBraceClose))) [] n1
-                let (blockContent, rest) = expectBlockContent n2
-                let result = If(cond, blockContent) |> Some
+                let (_, n1) = expectNextSym (SymBrace(BBraceOpen)) tail
+                let (cond, n2) = getNext false false tail
+                let (ifResult, rest) = getNext false isTable n2
+                let result = If(cond, ifResult, None) |> Some
                 (result, rest)
             | SymName nameSymbol ->
                 if isDefinition then 
-                    defineTable nameSymbol tail ( Some(Token token), tail )
+                    if isTable then
+                        expression true true (Identifier nameSymbol) tail ( Some(Identifier nameSymbol), tail )
+                    else (Some(Identifier nameSymbol), tail)
                 else                
                     if localScope |> List.contains nameSymbol then
-                        ( Some(Reference(nameSymbol)), tail )
+                        functionCall nameSymbol tail ( Some(Identifier(nameSymbol)), tail )
                     else
                         failwith (sprintf "Undefined name '%s'" nameSymbol)
             | SymVal value -> 
-                let defaultResult = ( Some(ValueToken(value)), tail )
+                let defaultToken = ValueToken(value)
+                let defaultResult = ( defaultToken |> Some, tail )
                 if isDefinition then 
                     let lookAhead = tail.Head
                     if (SymPunct(PDouble) = lookAhead) then
@@ -209,11 +256,14 @@ module Parser =
                             | VString str -> str
                             | VInteger i -> i.ToString()
                             | _ -> failwith (sprintf "Invalid table key %A" value)
-                        defineTable nameSymbol tail defaultResult
+                        expression true true (Identifier nameSymbol) tail defaultResult
                     else
                         defaultResult                   
                 else 
-                    defaultResult
+                    expression false false defaultToken tail defaultResult
+            // | SymBrace (BBraceOpen) ->
+            //     let (content, rest) = parseUntil isDefinition (Token(SymBrace(BBraceClose))) [] tail
+            //     expression (SymBrace (BBraceOpen)) 
             | _ -> ( Some(Token token), tail)
 
-    let execute = parse false        
+    let execute = parse false false 

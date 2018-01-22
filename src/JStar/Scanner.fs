@@ -1,6 +1,9 @@
 namespace JStar
 
 open JStar.Lexer
+open Microsoft.VisualBasic.CompilerServices
+open Microsoft.VisualBasic.CompilerServices
+open Microsoft.VisualBasic.CompilerServices
 
 module Scanner =
 
@@ -54,6 +57,9 @@ module Scanner =
     | VString of string
     | VTemplateString of string
     | VReference of string
+    | VCall of string * (Value list)
+    | VOp of Operators
+    | VExpression of Value list
     | VBool of bool
     | VUnit
     | VNone
@@ -71,14 +77,11 @@ module Scanner =
     /// Removes quotes from String Token
     let getStringContent (str : string) = str.Substring(1, str.Length - 2)
 
-    type LookAheadResult = (Lexer.Token list -> Lexer.Token) * Lexer.Token list
-
     let lookAhead (tokenStack : Lexer.Token list) (expect : Lexer.Token list) (next : Lexer.Token) =
         if expect |> List.contains next then 
             Some (next::tokenStack)
         else
             None // TODO: Build proper error message (token name)
-
     let matchOperator op =
         match op with
         | "==" -> SymOp(OCompareEqual)
@@ -139,6 +142,7 @@ module Scanner =
 
     let transformToken token =
         match token with
+        | TComment _ -> None
         | TOperator op -> Some (matchOperator op)
         | TOpenBrace brace
         | TCloseBrace brace -> Some (matchBrace brace)
@@ -148,5 +152,11 @@ module Scanner =
         | TString str -> Some (SymVal(VString( getStringContent str )))
         | TTemplateString str -> Some (SymVal(VTemplateString( getStringContent str )))
         | TPunctuation punct -> Some (matchPunct punct)
+        | TNewLine -> None
         | TSpace _ -> None
         | TEnd -> None
+
+    let transformTokenLine token =
+        match token with
+        | TNewLine -> (None, 1)
+        | _ -> ((transformToken token), 0)

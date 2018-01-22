@@ -20,10 +20,14 @@ module Lexer =
     | TPunctuation of string
     | TOpenBrace of string
     | TCloseBrace of string
+    | TNewLine
+    | TComment // do we need this???
     | TEnd
 
     let getToken snippet =
         match snippet with
+        | RegexMatch @"^(\/\/.*)[$|\n]*" [tok] -> (TComment, tok)
+        | RegexMatch @"^(/\*(?:(?!\*/)(?:.|[\r\n]+))*\*/)" [tok] -> (TComment, tok)
         | RegexMatch @"^([a-zA-Z_]\w*)" [tok] -> (TName(tok), tok)
         | RegexMatch @"^(\s+)" [tok] -> (TSpace(tok), tok)
         | RegexMatch @"^(\-?\d+\.\d+)" [tok] -> (TDouble(tok), tok)
@@ -35,6 +39,7 @@ module Lexer =
         | RegexMatch @"^(\""[^\""]*\"")" [tok] -> (TString(tok), tok)
         | RegexMatch @"^(\`[^\`]*\`)" [tok] -> (TTemplateString(tok), tok)
         | RegexMatch @"^([^\w\s]+)" [tok] -> (TOperator(tok), tok)
+        | RegexMatch @"\n" [tok] -> (TNewLine, tok)
         | _ -> (TEnd, String.Empty)
 
     let rec execute result text =
