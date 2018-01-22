@@ -126,8 +126,7 @@ module ParserTest =
         let fnRest = [
             Some
                 (If
-                   (OpBinary
-                      (OCustom "<=",Group [Identifier "n"],ValueToken (VInteger 1)),
+                   (OpBinary (OCustom "<=",Identifier "n",ValueToken (VInteger 1)),
                     Block
                       [Some (Return (Some (Identifier "n")));
                        Some (Token (SymPunct PSemicolon))],None));

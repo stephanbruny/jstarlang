@@ -231,9 +231,10 @@ module Parser =
             // | SymBrace(BBlockClose) -> ( Some(BlockStop), tail )
             | SymKey(KIf) ->
                 let (_, n1) = expectNextSym (SymBrace(BBraceOpen)) tail
-                let (cond, n2) = getNext false false tail
-                let (ifResult, rest) = getNext false isTable n2
-                let result = If(cond, ifResult, None) |> Some
+                let (next, n2) = getNext false false n1
+                let (cond, n3) = expression false false next n2 (Some next, n2)
+                let (ifResult, rest) = getNext false isTable n3
+                let result = If(cond |> Option.get, ifResult, None) |> Some
                 (result, rest)
             | SymName nameSymbol ->
                 if isDefinition then 
